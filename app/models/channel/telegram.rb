@@ -123,15 +123,23 @@ class Channel::Telegram < ApplicationRecord
   end
 
   def send_message(message)
+    text = prepend_sender_name(message, message.outgoing_content)
     response = message_request(
       chat_id(message),
-      message.outgoing_content,
+      text,
       reply_markup(message),
       reply_to_message_id(message),
       business_connection_id: business_connection_id(message)
     )
     process_error(message, response)
     response.parsed_response['result']['message_id'] if response.success?
+  end
+
+  def prepend_sender_name(message, text)
+    sender = message.sender
+    return text if sender.blank?
+
+    "<b>#{CGI.escapeHTML(sender.name)}:</b>\n#{text}"
   end
 
   def reply_markup(message)

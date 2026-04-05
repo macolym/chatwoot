@@ -70,11 +70,17 @@ class Telegram::SendAttachmentsService
   end
 
   def media_group_request(chat_id, attachments, reply_to_message_id)
+    media_items = attachments.map { |hash| hash.except(:attachment) }
+    if !has_text? && sender_caption.present?
+      first = media_items.first.merge(caption: sender_caption, parse_mode: 'HTML')
+      media_items = [first] + media_items.drop(1)
+    end
+
     HTTParty.post("#{channel.telegram_api_url}/sendMediaGroup",
                   body: {
                     chat_id: chat_id,
                     **business_connection_body,
-                    media: attachments.map { |hash| hash.except(:attachment) }.to_json,
+                    media: media_items.to_json,
                     reply_to_message_id: reply_to_message_id
                   })
   end
@@ -119,6 +125,10 @@ class Telegram::SendAttachmentsService
       payload = { chat_id: chat_id, document: Faraday::Multipart::FilePart.new(file, mime_type, file_name) }
       payload[:reply_to_message_id] = reply_to_message_id if reply_to_message_id
       payload.merge!(business_connection_body)
+      if !has_text? && sender_caption.present?
+        payload[:caption] = sender_caption
+        payload[:parse_mode] = 'HTML'
+      end
 
       response = multipart_post_connection.post("#{channel.telegram_api_url}/sendDocument", payload)
       parse_faraday_response(response)
@@ -169,5 +179,16 @@ class Telegram::SendAttachmentsService
     body = {}
     body[:business_connection_id] = business_connection_id if business_connection_id
     body
+  end
+
+  def sender_caption
+    sender = message.sender
+    return if sender.blank?
+
+    "<b>#{CGI.escapeHTML(sender.name)}:</b>"
+  end
+
+  def has_text?
+    message.outgoing_content.present?
   end
 end

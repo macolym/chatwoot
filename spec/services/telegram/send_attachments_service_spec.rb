@@ -3,7 +3,11 @@ require 'rails_helper'
 RSpec.describe Telegram::SendAttachmentsService do
   describe '#perform' do
     let(:channel) { create(:channel_telegram) }
-    let(:message) { build(:message, conversation: create(:conversation, inbox: channel.inbox)) }
+    let(:conversation) { create(:conversation, inbox: channel.inbox) }
+    let(:sender_user) { create(:user, account: conversation.account, name: 'Attachment Agent') }
+    let(:message) do
+      build(:message, message_type: :outgoing, content: nil, sender: sender_user, conversation: conversation)
+    end
     let(:service) { described_class.new(message: message) }
     let(:telegram_api_url) { channel.telegram_api_url }
 
@@ -111,6 +115,52 @@ RSpec.describe Telegram::SendAttachmentsService do
         result = service.perform
         expect(result).to be_nil
         expect(a_request(:post, "#{telegram_api_url}/sendDocument")).to have_been_made.once
+      end
+    end
+
+    context 'when message has no text (caption on media)' do
+      before do
+        attach_file_to_message(message, 'image', 'sample.png', 'image/png')
+        message.save!
+      end
+
+      it 'adds sender caption and parse_mode to the first item in sendMediaGroup' do
+        service.perform
+        expect(a_request(:post, "#{telegram_api_url}/sendMediaGroup").with do |req|
+          params = CGI.parse(req.body)
+          media = JSON.parse(params['media'].first)
+          first = media.first
+          first['caption'] == '<b>Attachment Agent:</b>' && first['parse_mode'] == 'HTML'
+        end).to have_been_made
+      end
+
+      it 'includes caption in sendDocument multipart body' do
+        attach_file_to_message(message, 'file', 'sample.pdf', 'application/pdf')
+        message.save!
+        service.perform
+        expect(a_request(:post, "#{telegram_api_url}/sendDocument").with do |req|
+          req.body.include?('caption') && req.body.include?('Attachment Agent')
+        end).to have_been_made
+      end
+    end
+
+    context 'when message has text and attachments' do
+      let(:message) do
+        build(:message, message_type: :outgoing, content: 'Hello world', sender: sender_user, conversation: conversation)
+      end
+
+      before do
+        attach_file_to_message(message, 'image', 'sample.png', 'image/png')
+        message.save!
+      end
+
+      it 'does not add sender caption to media (name is only in the text message)' do
+        service.perform
+        expect(a_request(:post, "#{telegram_api_url}/sendMediaGroup").with do |req|
+          params = CGI.parse(req.body)
+          media = JSON.parse(params['media'].first)
+          media.first['caption'].blank?
+        end).to have_been_made
       end
     end
 

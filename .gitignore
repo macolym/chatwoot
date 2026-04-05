@@ -96,6 +96,15 @@ yarn-debug.log*
 .cursor
 .codex/
 .claude/
+.agent/
+.kilocode/
+.opencode/
+.qoder/
+.qwen/
+.windsurf/
+openspec/
+.github/prompts/
+.github/skills/
 CLAUDE.local.md
 
 # Histoire deployment
