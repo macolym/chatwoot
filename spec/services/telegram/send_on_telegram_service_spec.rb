@@ -19,7 +19,7 @@ describe Telegram::SendOnTelegramService do
         allow(telegram_request).to receive(:parsed_response).and_return({ 'result' => { 'message_id' => 'telegram_123' } })
         described_class.new(message: message).perform
         expect(message.source_id).to eq('telegram_123')
-        expect(posted_texts).to include(a_string_including('<b>Desk Agent:</b>'))
+        expect(posted_texts).to include(a_string_including('<b>DESK AGENT:</b>'))
       end
     end
   end

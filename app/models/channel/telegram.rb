@@ -139,7 +139,8 @@ class Channel::Telegram < ApplicationRecord
     sender = message.sender
     return text if sender.blank?
 
-    "<b>#{CGI.escapeHTML(sender.name)}:</b>\n#{text}"
+    display_name = CGI.escapeHTML(sender.name.to_s.upcase)
+    "<b>#{display_name}:</b>\n#{text}"
   end
 
   def reply_markup(message)

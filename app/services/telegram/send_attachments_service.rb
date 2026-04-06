@@ -185,7 +185,8 @@ class Telegram::SendAttachmentsService
     sender = message.sender
     return if sender.blank?
 
-    "<b>#{CGI.escapeHTML(sender.name)}:</b>"
+    display_name = CGI.escapeHTML(sender.name.to_s.upcase)
+    "<b>#{display_name}:</b>"
   end
 
   def has_text?

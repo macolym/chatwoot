@@ -10,7 +10,7 @@ RSpec.describe Channel::Telegram do
       let(:message) { build(:message, message_type: :outgoing, sender: build(:user, name: 'Jane Doe')) }
 
       it 'prefixes with bold name and newline' do
-        expect(result).to eq("<b>Jane Doe:</b>\nHello")
+        expect(result).to eq("<b>JANE DOE:</b>\nHello")
       end
     end
 
@@ -18,7 +18,7 @@ RSpec.describe Channel::Telegram do
       let(:message) { build(:message, message_type: :outgoing, sender: build(:agent_bot, name: 'Support Bot')) }
 
       it 'prefixes with bot name' do
-        expect(result).to eq("<b>Support Bot:</b>\nHello")
+        expect(result).to eq("<b>SUPPORT BOT:</b>\nHello")
       end
     end
 
@@ -34,7 +34,7 @@ RSpec.describe Channel::Telegram do
       let(:message) { build(:message, message_type: :outgoing, sender: build(:user, name: '<script>alert(1)</script>')) }
 
       it 'escapes the name for HTML' do
-        expect(result).to eq("<b>&lt;script&gt;alert(1)&lt;/script&gt;:</b>\nHello")
+        expect(result).to eq("<b>&lt;SCRIPT&gt;ALERT(1)&lt;/SCRIPT&gt;:</b>\nHello")
       end
     end
   end
@@ -117,7 +117,7 @@ RSpec.describe Channel::Telegram do
       agent = create(:user, account: conversation.account, name: 'Agent Smith')
       message = create(:message, message_type: :outgoing, content: 'test', sender: agent, conversation: conversation)
 
-      stub_telegram_send_message(telegram_channel.bot_token, expected_text: "<b>Agent Smith:</b>\ntest")
+      stub_telegram_send_message(telegram_channel.bot_token, expected_text: "<b>AGENT SMITH:</b>\ntest")
 
       expect(telegram_channel.send_message_on_telegram(message)).to eq('telegram_123')
     end
@@ -128,7 +128,7 @@ RSpec.describe Channel::Telegram do
       message = create(:message, message_type: :outgoing, content: '**test** *test* ~test~', sender: agent, conversation: conversation)
 
       rendered = '<strong>test</strong> <em>test</em> ~test~'
-      stub_telegram_send_message(telegram_channel.bot_token, expected_text: "<b>Agent Smith:</b>\n#{rendered}")
+      stub_telegram_send_message(telegram_channel.bot_token, expected_text: "<b>AGENT SMITH:</b>\n#{rendered}")
 
       expect(telegram_channel.send_message_on_telegram(message)).to eq('telegram_123')
     end
@@ -146,7 +146,7 @@ RSpec.describe Channel::Telegram do
         .with do |req|
           params = CGI.parse(req.body)
           params['chat_id'] == ['123'] &&
-            params['text'] == ["<b>Agent Smith:</b>\ntest"] &&
+            params['text'] == ["<b>AGENT SMITH:</b>\ntest"] &&
             params['reply_markup'] == ['{"one_time_keyboard":true,"inline_keyboard":[[{"text":"test","callback_data":"test"}]]}']
         end
         .to_return(
@@ -166,7 +166,7 @@ RSpec.describe Channel::Telegram do
 
       stub_telegram_send_message(
         telegram_channel.bot_token,
-        expected_text: "<b>Agent Smith:</b>\ntest",
+        expected_text: "<b>AGENT SMITH:</b>\ntest",
         business_connection_id: 'eooW3KF5WB5HxTD7T826'
       )
 
@@ -181,7 +181,7 @@ RSpec.describe Channel::Telegram do
       stub_request(:post, "https://api.telegram.org/bot#{telegram_channel.bot_token}/sendMessage")
         .with do |req|
           params = CGI.parse(req.body)
-          params['chat_id'] == ['123'] && params['text'] == ["<b>Agent Smith:</b>\ntest"]
+          params['chat_id'] == ['123'] && params['text'] == ["<b>AGENT SMITH:</b>\ntest"]
         end
         .to_return(
           status: 403,

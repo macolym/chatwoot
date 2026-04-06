@@ -130,7 +130,7 @@ RSpec.describe Telegram::SendAttachmentsService do
           params = CGI.parse(req.body)
           media = JSON.parse(params['media'].first)
           first = media.first
-          first['caption'] == '<b>Attachment Agent:</b>' && first['parse_mode'] == 'HTML'
+          first['caption'] == '<b>ATTACHMENT AGENT:</b>' && first['parse_mode'] == 'HTML'
         end).to have_been_made
       end
 
@@ -139,7 +139,7 @@ RSpec.describe Telegram::SendAttachmentsService do
         message.save!
         service.perform
         expect(a_request(:post, "#{telegram_api_url}/sendDocument").with do |req|
-          req.body.include?('caption') && req.body.include?('Attachment Agent')
+          req.body.include?('caption') && req.body.include?('ATTACHMENT AGENT')
         end).to have_been_made
       end
     end
