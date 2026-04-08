@@ -11,13 +11,18 @@ module AutoAssignmentHandler
   def run_auto_assignment
     # Assignment V2: Also trigger assignment when conversation is resolved or snoozed,
     # bypassing the open-only condition so the AssignmentJob can redistribute capacity.
-    return unless conversation_status_changed_to_open? || conversation_status_changed_to_resolved_or_snoozed?
+    return unless conversation_status_changed_to_open? || conversation_status_changed_to_resolved_or_snoozed? || conversation_manually_unassigned?
     return unless should_run_auto_assignment?
 
     if inbox.auto_assignment_v2_enabled?
       # Use new assignment system
       AutoAssignment::AssignmentJob.perform_later(inbox_id: inbox.id)
     else
+      if conversation_status_changed_to_resolved_or_snoozed? || conversation_manually_unassigned?
+        AutoAssignment::PeriodicAssignmentJob.perform_later(inbox_id: inbox.id)
+        return
+      end
+
       # Use legacy assignment system
       # If conversation has a team, only consider team members for assignment
       allowed_agent_ids = team_id.present? ? team_member_ids_with_capacity : inbox.member_ids_with_assignment_capacity
@@ -26,7 +31,11 @@ module AutoAssignmentHandler
   end
 
   def conversation_status_changed_to_resolved_or_snoozed?
-    inbox.auto_assignment_v2_enabled? && saved_change_to_status? && (resolved? || snoozed?)
+    saved_change_to_status? && (resolved? || snoozed?)
+  end
+
+  def conversation_manually_unassigned?
+    saved_change_to_assignee_id? && assignee_id.nil? && (open? || pending?)
   end
 
   def team_member_ids_with_capacity

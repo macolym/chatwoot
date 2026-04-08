@@ -79,6 +79,7 @@ class Inbox < ApplicationRecord
 
   after_destroy :delete_round_robin_agents
 
+  after_save :trigger_assignment_on_limit_increase
   after_create_commit :dispatch_create_event
   after_update_commit :dispatch_update_event
 
@@ -204,6 +205,22 @@ class Inbox < ApplicationRecord
   end
 
   private
+
+  def trigger_assignment_on_limit_increase
+    return unless enable_auto_assignment?
+    return unless saved_change_to_auto_assignment_config?
+    return unless max_assignment_limit_increased?
+
+    AutoAssignment::PeriodicAssignmentJob.perform_later(inbox_id: id)
+  end
+
+  def max_assignment_limit_increased?
+    previous_config, current_config = saved_change_to_auto_assignment_config
+    previous_limit = previous_config.to_h['max_assignment_limit'].to_i
+    current_limit = current_config.to_h['max_assignment_limit'].to_i
+
+    current_limit > previous_limit
+  end
 
   def default_name_for_blank_name
     email? ? display_name_from_email : ''

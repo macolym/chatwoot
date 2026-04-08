@@ -259,6 +259,30 @@ RSpec.describe Inbox do
     end
   end
 
+  describe 'auto assignment limit callback' do
+    let(:inbox) { create(:inbox, enable_auto_assignment: true, auto_assignment_config: { 'max_assignment_limit' => 1 }) }
+
+    it 'queues periodic assignment when max_assignment_limit increases' do
+      expect(AutoAssignment::PeriodicAssignmentJob).to receive(:perform_later).with(inbox_id: inbox.id)
+
+      inbox.update!(auto_assignment_config: { 'max_assignment_limit' => 2 })
+    end
+
+    it 'does not queue periodic assignment when max_assignment_limit decreases' do
+      inbox.update_column(:auto_assignment_config, { 'max_assignment_limit' => 2 }) # rubocop:disable Rails/SkipsModelValidations
+      expect(AutoAssignment::PeriodicAssignmentJob).not_to receive(:perform_later)
+
+      inbox.update!(auto_assignment_config: { 'max_assignment_limit' => 1 })
+    end
+
+    it 'does not queue periodic assignment when auto assignment is disabled' do
+      inbox.update!(enable_auto_assignment: false)
+      expect(AutoAssignment::PeriodicAssignmentJob).not_to receive(:perform_later)
+
+      inbox.update!(auto_assignment_config: { 'max_assignment_limit' => 2 })
+    end
+  end
+
   describe '#sanitized_name' do
     context 'when inbox name contains forbidden characters' do
       it 'removes forbidden and spam-trigger characters' do

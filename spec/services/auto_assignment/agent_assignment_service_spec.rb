@@ -35,5 +35,37 @@ RSpec.describe AutoAssignment::AgentAssignmentService do
       expect(described_class.new(conversation: conversation,
                                  allowed_agent_ids: inbox_members.map(&:user_id).map(&:to_s)).find_assignee).to eq(inbox_members[4].user)
     end
+
+    it 'returns nil when no one is online' do
+      allow(OnlineStatusTracker).to receive(:get_available_users).and_return({})
+
+      assignee = described_class.new(
+        conversation: conversation,
+        allowed_agent_ids: inbox_members.map(&:user_id).map(&:to_s)
+      ).find_assignee
+
+      expect(assignee).to be_nil
+    end
+  end
+
+  context 'when no allowed agents are online' do
+    let!(:online_users) do
+      {
+        inbox_members[0].user_id.to_s => 'offline',
+        inbox_members[1].user_id.to_s => 'offline',
+        inbox_members[2].user_id.to_s => 'offline',
+        inbox_members[3].user_id.to_s => 'offline',
+        inbox_members[4].user_id.to_s => 'offline'
+      }
+    end
+
+    it 'does not assign the conversation' do
+      described_class.new(
+        conversation: conversation,
+        allowed_agent_ids: inbox_members.map(&:user_id).map(&:to_s)
+      ).perform
+
+      expect(conversation.reload.assignee).to be_nil
+    end
   end
 end

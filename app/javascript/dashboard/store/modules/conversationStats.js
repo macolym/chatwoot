@@ -2,6 +2,8 @@ import types from '../mutation-types';
 import ConversationApi from '../../api/inbox/conversation';
 import { debounce } from '@chatwoot/utils';
 
+let latestMetaRequestId = 0;
+
 const state = {
   mineCount: 0,
   unAssignedCount: 0,
@@ -13,9 +15,10 @@ export const getters = {
 };
 
 // Create a debounced version of the actual API call function
-const fetchMetaData = async (commit, params) => {
+const fetchMetaData = async (commit, params, requestId) => {
   try {
     const response = await ConversationApi.meta(params);
+    if (ifStaleRequest(requestId)) return;
     const {
       data: { meta },
     } = response;
@@ -24,6 +27,8 @@ const fetchMetaData = async (commit, params) => {
     // ignore
   }
 };
+
+const ifStaleRequest = requestId => requestId !== latestMetaRequestId;
 
 const debouncedFetchMetaData = debounce(fetchMetaData, 500, false, 1500);
 const longDebouncedFetchMetaData = debounce(fetchMetaData, 5000, false, 10000);
@@ -36,12 +41,15 @@ const superLongDebouncedFetchMetaData = debounce(
 
 export const actions = {
   get: async ({ commit, state: $state }, params) => {
+    latestMetaRequestId += 1;
+    const requestId = latestMetaRequestId;
+
     if ($state.allCount > 5000) {
-      superLongDebouncedFetchMetaData(commit, params);
+      superLongDebouncedFetchMetaData(commit, params, requestId);
     } else if ($state.allCount > 100) {
-      longDebouncedFetchMetaData(commit, params);
+      longDebouncedFetchMetaData(commit, params, requestId);
     } else {
-      debouncedFetchMetaData(commit, params);
+      debouncedFetchMetaData(commit, params, requestId);
     }
   },
   set({ commit }, meta) {

@@ -11,8 +11,16 @@ class AutoAssignment::RateLimiter
   end
 
   def current_count
+    [redis_count, db_count].max
+  end
+
+  def redis_count
     pattern = assignment_key_pattern
     Redis::Alfred.keys_count(pattern)
+  end
+
+  def db_count
+    @db_count ||= inbox.conversations.open.where(assignee_id: agent.id).count
   end
 
   private

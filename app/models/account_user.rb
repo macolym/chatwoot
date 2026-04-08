@@ -39,6 +39,7 @@ class AccountUser < ApplicationRecord
   after_create_commit :notify_creation, :create_notification_setting
   after_destroy :notify_deletion, :remove_user_from_account
   after_save :update_presence_in_redis, if: :saved_change_to_availability?
+  after_update_commit :trigger_auto_assignment_on_online
 
   validates :user_id, uniqueness: { scope: :account_id }
 
@@ -78,6 +79,30 @@ class AccountUser < ApplicationRecord
 
   def update_presence_in_redis
     OnlineStatusTracker.set_status(account.id, user.id, availability)
+  end
+
+  def trigger_auto_assignment_on_online
+    return unless previous_changes.key?('availability')
+    return unless online?
+
+    inboxes_with_auto_assignment.find_each do |inbox|
+      enqueue_auto_assignment(inbox.id)
+    end
+  end
+
+  def inboxes_with_auto_assignment
+    account.inboxes
+           .joins(:inbox_members)
+           .where(inbox_members: { user_id: user_id }, enable_auto_assignment: true)
+           .distinct
+  end
+
+  def enqueue_auto_assignment(inbox_id)
+    if account.feature_enabled?('assignment_v2')
+      AutoAssignment::AssignmentJob.perform_later(inbox_id: inbox_id)
+    else
+      AutoAssignment::PeriodicAssignmentJob.perform_later(inbox_id: inbox_id)
+    end
   end
 end
 

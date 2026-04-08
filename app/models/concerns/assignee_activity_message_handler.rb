@@ -14,9 +14,15 @@ module AssigneeActivityMessageHandler
 
   def generate_assignee_change_activity_content(user_name)
     params = { assignee_name: assignee&.name || '', user_name: user_name }
-    key = assignee_id ? 'assigned' : 'removed'
-    key = 'self_assigned' if self_assign? assignee_id
+    key = assignee_available_in_account? ? 'assigned' : 'removed'
+    key = 'self_assigned' if self_assign?(assignee_id)
     I18n.t("conversations.activity.assignee.#{key}", **params)
+  end
+
+  def assignee_available_in_account?
+    return false if assignee_id.blank?
+
+    account.account_users.exists?(user_id: assignee_id)
   end
 
   def activity_message_owner(user_name)
