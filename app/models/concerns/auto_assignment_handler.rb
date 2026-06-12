@@ -11,12 +11,15 @@ module AutoAssignmentHandler
   def run_auto_assignment
     # Assignment V2: Also trigger assignment when conversation is resolved or snoozed,
     # bypassing the open-only condition so the AssignmentJob can redistribute capacity.
-    return unless conversation_status_changed_to_open? || conversation_status_changed_to_resolved_or_snoozed?
+    # When a conversation is returned to the queue (assignee cleared), enqueue redistribution too.
+    return unless conversation_status_changed_to_open? || conversation_status_changed_to_resolved_or_snoozed? || conversation_unassigned_for_v2?
     return unless should_run_auto_assignment?
 
     if inbox.auto_assignment_v2_enabled?
-      # Use new assignment system
-      AutoAssignment::AssignmentJob.perform_later(inbox_id: inbox.id)
+      # Coalesces bursts of triggers per inbox. Fine if the job runs even when the
+      # surrounding save rolls back: it only scans the inbox's current unassigned
+      # conversations, so running it for an uncommitted change is harmless.
+      AutoAssignment::AssignmentJob.enqueue_for_inbox(inbox.id)
     else
       # Use legacy assignment system
       # If conversation has a team, only consider team members for assignment
@@ -27,6 +30,10 @@ module AutoAssignmentHandler
 
   def conversation_status_changed_to_resolved_or_snoozed?
     inbox.auto_assignment_v2_enabled? && saved_change_to_status? && (resolved? || snoozed?)
+  end
+
+  def conversation_unassigned_for_v2?
+    inbox.auto_assignment_v2_enabled? && saved_change_to_assignee_id? && assignee_id.nil?
   end
 
   def team_member_ids_with_capacity

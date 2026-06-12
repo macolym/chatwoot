@@ -8,6 +8,7 @@ class BulkActionsJob < ApplicationJob
 
   def perform(account:, params:, user:)
     @account = account
+    @user = user
     Current.user = user
     @params = params
     @records = records_to_updated(params[:ids])
@@ -39,7 +40,10 @@ class BulkActionsJob < ApplicationJob
   def available_params(params)
     return unless params[:fields]
 
-    params[:fields].delete_if { |key, value| value.nil? && key == 'status' }
+    fields = params[:fields].dup
+    fields[:assignee_id] = nil if fields.key?(:assignee_id) && fields[:assignee_id].to_i.zero?
+    fields.delete_if { |key, value| value.nil? && key == 'status' }
+    fields.presence
   end
 
   def bulk_add_labels(conversation)
@@ -61,6 +65,7 @@ class BulkActionsJob < ApplicationJob
     current_model = @params[:type].camelcase
     return unless MODEL_TYPE.include?(current_model)
 
-    current_model.constantize&.where(account_id: @account.id, display_id: ids)
+    scope = current_model.constantize.where(account_id: @account.id, display_id: ids)
+    Conversations::PermissionFilterService.new(scope, @user, @account).perform
   end
 end

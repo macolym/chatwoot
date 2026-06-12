@@ -29,7 +29,7 @@ export function useAgentsList(includeNoneAgent = true) {
   const createNoneAgent = () => ({
     confirmed: true,
     name: t('AGENT_MGMT.MULTI_SELECTOR.LIST.NONE') || 'None',
-    id: 0,
+    id: null,
     role: 'agent',
     account_id: 0,
     email: 'None',

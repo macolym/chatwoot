@@ -19,7 +19,7 @@ vi.mock('dashboard/helper/agentHelper');
 const mockNoneAgent = {
   confirmed: true,
   name: 'None',
-  id: 0,
+  id: null,
   role: 'agent',
   account_id: 0,
   email: 'None',
@@ -71,7 +71,7 @@ describe('useAgentsList', () => {
   it('excludes None agent when includeNoneAgent is false', () => {
     const { agentsList } = useAgentsList(false);
 
-    expect(agentsList.value[0].id).not.toBe(0);
+    expect(agentsList.value[0].id).not.toBeNull();
     expect(agentsList.value.length).toBe(formattedAgentsData.slice(1).length);
   });
 
