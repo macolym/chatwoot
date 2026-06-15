@@ -70,6 +70,24 @@ RSpec.describe Telegram::SendAttachmentsService do
       end
     end
 
+    context 'when message has an outgoing agent sender' do
+      let(:user) { create(:user, name: 'Macoly Melo') }
+
+      before do
+        message.update!(message_type: :outgoing, sender: user, content: '')
+        attach_file_to_message(message, 'image', 'sample.png', 'image/png')
+        message.save!
+      end
+
+      it 'adds the sender name as caption on the first attachment' do
+        service.perform
+
+        expect(a_request(:post, "#{telegram_api_url}/sendMediaGroup")
+          .with { |req| req.body.include?(ERB::Util.url_encode('<b>MACOLY MELO:</b>')) })
+          .to have_been_made.once
+      end
+    end
+
     context 'when all attachments are audio' do
       before do
         2.times { attach_file_to_message(message, 'audio', 'sample.mp3', 'audio/mpeg') }

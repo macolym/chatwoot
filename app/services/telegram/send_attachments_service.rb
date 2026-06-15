@@ -20,6 +20,7 @@ class Telegram::SendAttachmentsService
 
   def perform
     attachment_message_id = nil
+    @caption_applied = false
 
     group_attachments_by_type.each do |type, attachments|
       attachment_message_id = process_attachments_by_type(type, attachments)
@@ -70,27 +71,37 @@ class Telegram::SendAttachmentsService
   end
 
   def media_group_request(chat_id, attachments, reply_to_message_id)
+    caption = next_attachment_caption
+    media_payload = attachments.map.with_index do |hash, index|
+      payload = hash.except(:attachment)
+      if index.zero? && caption.present?
+        payload[:caption] = caption
+        payload[:parse_mode] = 'HTML'
+      end
+      payload
+    end
+
     HTTParty.post("#{channel.telegram_api_url}/sendMediaGroup",
                   body: {
                     chat_id: chat_id,
                     **business_connection_body,
-                    media: attachments.map { |hash| hash.except(:attachment) }.to_json,
+                    media: media_payload.to_json,
                     reply_to_message_id: reply_to_message_id
                   })
   end
 
   def send_individual_attachments(attachments)
     response = nil
-    attachments.map do |attachment|
-      response = document_request(channel.chat_id(message), attachment, channel.reply_to_message_id(message))
+    attachments.each_with_index do |attachment, index|
+      response = document_request(channel.chat_id(message), attachment, channel.reply_to_message_id(message), include_caption: index.zero?)
       break unless handle_response(response)
     end
     response
   end
 
-  def document_request(chat_id, attachment, reply_to_message_id)
+  def document_request(chat_id, attachment, reply_to_message_id, include_caption: false)
     temp_file_path = save_attachment_to_tempfile(attachment[:attachment])
-    response = send_file(chat_id, temp_file_path, reply_to_message_id)
+    response = send_file(chat_id, temp_file_path, reply_to_message_id, include_caption: include_caption)
     File.delete(temp_file_path)
     response
   end
@@ -111,13 +122,18 @@ class Telegram::SendAttachmentsService
     temp_file_path
   end
 
-  def send_file(chat_id, file_path, reply_to_message_id)
+  def send_file(chat_id, file_path, reply_to_message_id, include_caption: false)
     File.open(file_path, 'rb') do |file|
       file_name = File.basename(file_path)
       mime_type = Marcel::MimeType.for(name: file_name) || 'application/octet-stream'
 
       payload = { chat_id: chat_id, document: Faraday::Multipart::FilePart.new(file, mime_type, file_name) }
       payload[:reply_to_message_id] = reply_to_message_id if reply_to_message_id
+      caption = next_attachment_caption if include_caption
+      if caption.present?
+        payload[:caption] = caption
+        payload[:parse_mode] = 'HTML'
+      end
       payload.merge!(business_connection_body)
 
       response = multipart_post_connection.post("#{channel.telegram_api_url}/sendDocument", payload)
@@ -159,6 +175,16 @@ class Telegram::SendAttachmentsService
 
   def channel
     @channel ||= message.inbox.channel
+  end
+
+  def next_attachment_caption
+    return if @caption_applied
+
+    caption = channel.telegram_outgoing_text(message)
+    return if caption.blank?
+
+    @caption_applied = true
+    caption
   end
 
   def business_connection_id

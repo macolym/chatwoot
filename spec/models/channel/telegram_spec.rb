@@ -91,6 +91,25 @@ RSpec.describe Channel::Telegram do
       expect(telegram_channel.send_message_on_telegram(message)).to eq('telegram_123')
     end
 
+    it 'prepends sender name only when media has no text' do
+      user = create(:user, name: 'Macoly Melo')
+      message = create(:message, message_type: :outgoing, content: '', sender: user,
+                                 conversation: create(:conversation, inbox: telegram_channel.inbox, additional_attributes: { 'chat_id' => '123' }))
+      attachment = message.attachments.new(account_id: message.account_id, file_type: :image)
+      attachment.file.attach(io: Rails.root.join('spec/assets/avatar.png').open, filename: 'avatar.png', content_type: 'image/png')
+      message.save!
+
+      stub_request(:post, "https://api.telegram.org/bot#{telegram_channel.bot_token}/sendMediaGroup")
+        .with { |req| req.body.include?(ERB::Util.url_encode('<b>MACOLY MELO:</b>')) }
+        .to_return(
+          status: 200,
+          body: { ok: true, result: [{ message_id: 'telegram_media' }] }.to_json,
+          headers: { 'Content-Type' => 'application/json' }
+        )
+
+      expect(telegram_channel.send_message_on_telegram(message)).to eq('telegram_media')
+    end
+
     it 'send message with markdown converted to telegram HTML' do
       message = create(:message, message_type: :outgoing, content: '**test** *test* ~test~', sender: nil,
                                  conversation: create(:conversation, inbox: telegram_channel.inbox, additional_attributes: { 'chat_id' => '123' }))
