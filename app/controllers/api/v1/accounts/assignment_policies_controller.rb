@@ -14,6 +14,7 @@ class Api::V1::Accounts::AssignmentPoliciesController < Api::V1::Accounts::BaseC
 
   def update
     @assignment_policy.update!(assignment_policy_params)
+    AutoAssignment::SettingsRedistributionService.enqueue_for_assignment_policy(@assignment_policy)
   end
 
   def destroy

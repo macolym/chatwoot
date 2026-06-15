@@ -10,10 +10,12 @@ class Api::V1::Accounts::AgentCapacityPolicies::InboxLimitsController < Api::V1:
       inbox: @inbox,
       conversation_limit: permitted_params[:conversation_limit]
     )
+    AutoAssignment::SettingsRedistributionService.enqueue_for_inbox(@inbox)
   end
 
   def update
     @inbox_limit.update!(conversation_limit: permitted_params[:conversation_limit])
+    AutoAssignment::SettingsRedistributionService.enqueue_for_inbox(@inbox_limit.inbox)
   end
 
   def destroy

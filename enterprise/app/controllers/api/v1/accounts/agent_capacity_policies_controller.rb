@@ -14,6 +14,7 @@ class Api::V1::Accounts::AgentCapacityPoliciesController < Api::V1::Accounts::En
 
   def update
     @agent_capacity_policy.update!(permitted_params)
+    AutoAssignment::SettingsRedistributionService.enqueue_for_agent_capacity_policy(@agent_capacity_policy)
   end
 
   def destroy
