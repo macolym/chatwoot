@@ -104,13 +104,31 @@ class Channel::Telegram < ApplicationRecord
   def send_message(message)
     response = message_request(
       chat_id(message),
-      message.outgoing_content,
+      telegram_outgoing_text(message),
       reply_markup(message),
       reply_to_message_id(message),
       business_connection_id: business_connection_id(message)
     )
     process_error(message, response)
     response.parsed_response['result']['message_id'] if response.success?
+  end
+
+  def telegram_outgoing_text(message)
+    text = message.outgoing_content
+    return text unless prepend_sender_name?(message)
+
+    sender_name = formatted_sender_name(message)
+    return text if sender_name.blank?
+
+    "<b>#{CGI.escapeHTML(sender_name)}:</b>\n#{text}"
+  end
+
+  def prepend_sender_name?(message)
+    message.outgoing? && message.sender.present? && !message.private?
+  end
+
+  def formatted_sender_name(message)
+    message.sender.try(:name)&.strip&.upcase
   end
 
   def reply_markup(message)
