@@ -1,5 +1,5 @@
 class Conversations::ContactInboxResolver
-  pattr_initialize [:contact_inbox!, :attributes: {}]
+  pattr_initialize [:contact_inbox!, { attributes: {} }]
 
   def perform
     ContactInbox.transaction do
