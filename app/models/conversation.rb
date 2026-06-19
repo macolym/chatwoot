@@ -66,6 +66,7 @@ class Conversation < ApplicationRecord
   validates :inbox_id, presence: true
   validates :contact_id, presence: true
   before_validation :validate_additional_attributes
+  before_validation :normalize_assignee_id
   before_validation :reset_agent_bot_when_assignee_present
   validates :additional_attributes, jsonb_attributes_length: true
   validates :custom_attributes, jsonb_attributes_length: true
@@ -269,6 +270,10 @@ class Conversation < ApplicationRecord
 
   def validate_additional_attributes
     self.additional_attributes = {} unless additional_attributes.is_a?(Hash)
+  end
+
+  def normalize_assignee_id
+    self.assignee_id = nil if assignee_id&.zero?
   end
 
   def reset_agent_bot_when_assignee_present

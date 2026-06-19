@@ -40,7 +40,10 @@ class BulkActionsJob < ApplicationJob
   def available_params(params)
     return unless params[:fields]
 
-    params[:fields].delete_if { |key, value| value.nil? && key == 'status' }
+    fields = params[:fields].dup
+    fields[:assignee_id] = nil if fields.key?(:assignee_id) && fields[:assignee_id].to_i.zero?
+    fields.delete_if { |key, value| value.nil? && key == 'status' }
+    fields.presence
   end
 
   def bulk_add_labels(conversation)

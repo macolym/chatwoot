@@ -14,10 +14,10 @@ class Conversations::AssignmentService
   attr_reader :conversation, :assignee_id, :assignee_type
 
   def assign_agent
-    conversation.assignee = assignee
+    conversation.assignee = unassigning? ? nil : assignee
     conversation.assignee_agent_bot = nil
     conversation.save!
-    assignee
+    conversation.assignee
   end
 
   def assign_agent_bot
@@ -29,7 +29,13 @@ class Conversations::AssignmentService
     agent_bot
   end
 
+  def unassigning?
+    assignee_id.blank? || assignee_id.to_i.zero?
+  end
+
   def assignee
+    return nil if unassigning?
+
     @assignee ||= conversation.account.users.find_by(id: assignee_id)
   end
 
