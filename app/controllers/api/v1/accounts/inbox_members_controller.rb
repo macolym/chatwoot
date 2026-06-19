@@ -13,12 +13,14 @@ class Api::V1::Accounts::InboxMembersController < Api::V1::Accounts::BaseControl
       @inbox.add_members(agents_to_be_added_ids)
     end
     fetch_updated_agents
+    enqueue_auto_assignment
   end
 
   def update
     authorize @inbox, :update?
     update_agents_list
     fetch_updated_agents
+    enqueue_auto_assignment
   end
 
   def destroy
@@ -60,5 +62,9 @@ class Api::V1::Accounts::InboxMembersController < Api::V1::Accounts::BaseControl
 
   def fetch_inbox
     @inbox = Current.account.inboxes.find(params[:inbox_id])
+  end
+
+  def enqueue_auto_assignment
+    AutoAssignment::SettingsRedistributionService.enqueue_for_inbox(@inbox)
   end
 end
