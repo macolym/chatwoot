@@ -36,9 +36,24 @@ class Channel::Telegram < ApplicationRecord
   end
 
   def send_message_on_telegram(message)
-    message_id = send_message(message) if message.outgoing_content.present?
-    message_id = Telegram::SendAttachmentsService.new(message: message).perform if message.attachments.present?
+    if message.attachments.present?
+      message_id = Telegram::SendAttachmentsService.new(message: message).perform
+    elsif message.outgoing_content.present?
+      message_id = send_message(message)
+    end
     message_id
+  end
+
+  def telegram_outgoing_text(message)
+    text = message.outgoing_content
+    return text if text.blank? && !prepend_sender_name?(message)
+    return text unless prepend_sender_name?(message)
+
+    sender_name = formatted_sender_name(message)
+    return text if sender_name.blank?
+
+    sender_prefix = "<b>#{CGI.escapeHTML(sender_name)}:</b>"
+    text.present? ? "#{sender_prefix}\n#{text}" : sender_prefix
   end
 
   def get_telegram_profile_image(user_id)
@@ -125,13 +140,21 @@ class Channel::Telegram < ApplicationRecord
   def send_message(message)
     response = message_request(
       chat_id(message),
-      message.outgoing_content,
+      telegram_outgoing_text(message),
       reply_markup(message),
       reply_to_message_id(message),
       business_connection_id: business_connection_id(message)
     )
     process_error(message, response)
     response.parsed_response['result']['message_id'] if response.success?
+  end
+
+  def prepend_sender_name?(message)
+    message.outgoing? && message.sender.present? && !message.private?
+  end
+
+  def formatted_sender_name(message)
+    message.sender.try(:name)&.strip&.upcase
   end
 
   def reply_markup(message)
