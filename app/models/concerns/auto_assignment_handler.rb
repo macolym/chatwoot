@@ -3,10 +3,36 @@ module AutoAssignmentHandler
   include Events::Types
 
   included do
+    after_save :release_agent_fair_distribution_slot, if: :should_release_agent_fair_distribution_slot?
     after_save :run_auto_assignment
   end
 
   private
+
+  def should_release_agent_fair_distribution_slot?
+    return false unless inbox.auto_assignment_v2_enabled?
+
+    (saved_change_to_status? && resolved?) ||
+      (saved_change_to_assignee_id? && assignee_id.nil?)
+  end
+
+  def release_agent_fair_distribution_slot
+    agent_id = fair_distribution_release_agent_id
+    return if agent_id.blank?
+
+    agent = User.find_by(id: agent_id)
+    return if agent.blank?
+
+    AutoAssignment::RateLimiter.new(inbox: inbox, agent: agent).release_assignment(self)
+  end
+
+  def fair_distribution_release_agent_id
+    if saved_change_to_assignee_id? && assignee_id.nil?
+      saved_change_to_assignee_id.first
+    elsif saved_change_to_status? && resolved?
+      assignee_id
+    end
+  end
 
   def run_auto_assignment
     # Assignment V2: Also trigger assignment when conversation is resolved or snoozed,
