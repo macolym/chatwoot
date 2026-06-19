@@ -10,6 +10,10 @@ class AutoAssignment::RateLimiter
     Redis::Alfred.set(assignment_key, conversation.id.to_s, ex: window)
   end
 
+  def release_assignment(conversation)
+    Redis::Alfred.delete(build_assignment_key(conversation.id))
+  end
+
   def current_count
     pattern = assignment_key_pattern
     Redis::Alfred.keys_count(pattern)

@@ -9,7 +9,10 @@ class AutoAssignment::AssignmentJob < ApplicationJob
   def self.enqueue_for_inbox(inbox_id)
     key = format(::Redis::Alfred::AUTO_ASSIGNMENT_IN_FLIGHT_KEY, inbox_id: inbox_id)
     token = SecureRandom.uuid
-    return false unless ::Redis::Alfred.set(key, token, nx: true, ex: IN_FLIGHT_TTL)
+    unless ::Redis::Alfred.set(key, token, nx: true, ex: IN_FLIGHT_TTL)
+      mark_pending(inbox_id)
+      return false
+    end
 
     return true if perform_later(inbox_id: inbox_id, token: token)
 
@@ -20,6 +23,11 @@ class AutoAssignment::AssignmentJob < ApplicationJob
     # Enqueue raised after we claimed the gate; release our own claim, then re-raise.
     ::Redis::Alfred.delete_if_equals(key, token)
     raise
+  end
+
+  def self.mark_pending(inbox_id)
+    pending_key = format(::Redis::Alfred::AUTO_ASSIGNMENT_PENDING_KEY, inbox_id: inbox_id)
+    ::Redis::Alfred.set(pending_key, '1', ex: IN_FLIGHT_TTL)
   end
 
   def perform(inbox_id:, token: nil)
@@ -34,9 +42,17 @@ class AutoAssignment::AssignmentJob < ApplicationJob
     raise e if Rails.env.test?
   ensure
     release_in_flight(inbox_id, token)
+    process_pending(inbox_id)
   end
 
   private
+
+  def process_pending(inbox_id)
+    pending_key = format(::Redis::Alfred::AUTO_ASSIGNMENT_PENDING_KEY, inbox_id: inbox_id)
+    return unless ::Redis::Alfred.delete(pending_key).to_i.positive?
+
+    self.class.enqueue_for_inbox(inbox_id)
+  end
 
   # Release the in-flight marker only if we still own it. The atomic
   # compare-and-delete ensures a job whose TTL lapsed can't delete a newer
