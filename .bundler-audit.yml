@@ -21,3 +21,38 @@ ignore:
   - CVE-2026-33176
   - CVE-2026-33195
   - CVE-2026-33202
+  # No Rails 7.1 patch for this Active Storage advisory; mitigated locally.
+  # Remove once on Rails 7.2.3.1+.
+  - CVE-2026-66066
+  # RubyLLM's name-normalization ReDoS is reported on Ruby 3.1; we require Ruby 3.4.4.
+  # Built-in tool names are fixed; custom tools use bounded slugs and override normalization.
+  # Patched 2.0 releases need an ai-agents migration (currently constrained to RubyLLM 1.x).
+  # Remove when a supported patched RubyLLM/ai-agents combination is adopted.
+  - CVE-2026-67991
+  # Think-tag parsing and Mistral matching ReDoS are reported on Ruby 3.1.
+  # We pin Ruby 3.4.4, where the affected regexes are linear-time.
+  # Remove when a supported patched RubyLLM/ai-agents combination is adopted;
+  # reassess if the supported Ruby runtime changes.
+  - CVE-2026-67987
+  - CVE-2026-67989
+  # Rails 7.2.3.1 advisories: fixes require Rails 8.0.5.2/8.1.4.1 (major upgrade).
+  # Upstream v4.19.1 ships 7.2.3.1, so these are inherited from the merge.
+  # Remove when the fork moves to Rails 8.
+  - GHSA-5957-c7qm-m469 # actionmailbox
+  - GHSA-2586-8ghr-69fj # actionpack
+  - GHSA-gmj8-hvj3-49mw # actionpack
+  - GHSA-r9jg-fmfx-2gv6 # actionpack
+  - GHSA-rwvh-fw6r-pwvp # actionpack
+  - GHSA-wm3x-v3qw-4jh3 # actionpack
+  - GHSA-x6mj-8jx9-qhqv # actionpack
+  - GHSA-2p2f-4rq4-gjwc # actionview
+  - GHSA-68p9-83h6-5wpj # actionview
+  - GHSA-rq8q-p985-fjq7 # actionview
+  - GHSA-v6rj-xm57-3p59 # actionview
+  - GHSA-3f4q-8x5m-76v8 # activestorage
+  - GHSA-3w93-6hmw-whh4 # activestorage
+  - GHSA-f3w6-w445-fwh9 # activestorage
+  - GHSA-hfr4-8rjc-97m2 # activestorage
+  - GHSA-p2pm-g2h6-7j5j # activestorage
+  - GHSA-v924-7rp8-4mxh # activestorage
+  - GHSA-8474-xrp6-wh69 # activesupport

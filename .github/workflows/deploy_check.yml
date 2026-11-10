@@ -17,6 +17,8 @@ permissions:
 jobs:
   deployment_check:
     name: Check Deployment
+    # ponytail: the review app only exists in the upstream repo; forks have no herokuapp to poll.
+    if: github.repository == 'chatwoot/chatwoot'
     runs-on: ubuntu-latest
     steps:
       - name: Install jq

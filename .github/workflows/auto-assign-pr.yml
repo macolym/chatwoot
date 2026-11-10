@@ -17,7 +17,13 @@ jobs:
             const { owner, repo } = context.repo;
             const pull_number = context.payload.pull_request.number;
             const author = context.payload.pull_request.user.login;
-            
+
+            // ponytail: bots can't be assigned; skip instead of failing the check.
+            if (author.endsWith('[bot]')) {
+              console.log(`Skipping auto-assign: ${author} is a bot`);
+              return;
+            }
+
             await github.rest.issues.addAssignees({
               owner,
               repo,

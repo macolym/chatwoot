@@ -29,8 +29,9 @@ FactoryBot.define do
 
     trait :bot_message do
       message_type { 'outgoing' }
-      after(:build) do |message|
-        message.sender = nil
+      # ponytail: the factory's after(:build) assigns a default sender, so clear it after create.
+      after(:create) do |message|
+        message.update!(sender: nil)
       end
     end
 

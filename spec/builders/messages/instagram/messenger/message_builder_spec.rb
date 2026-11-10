@@ -254,6 +254,7 @@ describe Messages::Instagram::Messenger::MessageBuilder do
         inbox_id: instagram_messenger_inbox.id,
         contact_id: contact.id,
         status: :open,
+        contact_inbox: contact.contact_inboxes.find_by!(source_id: sender_id),
         additional_attributes: { type: 'instagram_direct_message', conversation_language: 'en' }
       )
 
@@ -275,6 +276,7 @@ describe Messages::Instagram::Messenger::MessageBuilder do
         inbox_id: instagram_messenger_inbox.id,
         contact_id: contact.id,
         status: :resolved,
+        contact_inbox: contact.contact_inboxes.find_by!(source_id: sender_id),
         additional_attributes: { type: 'instagram_direct_message', conversation_language: 'en' }
       )
 
@@ -319,6 +321,7 @@ describe Messages::Instagram::Messenger::MessageBuilder do
         inbox_id: instagram_messenger_inbox.id,
         contact_id: contact.id,
         status: :resolved,
+        contact_inbox: contact.contact_inboxes.find_by!(source_id: sender_id),
         additional_attributes: { type: 'instagram_direct_message', conversation_language: 'en' }
       )
 

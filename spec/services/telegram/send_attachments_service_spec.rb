@@ -85,7 +85,7 @@ RSpec.describe Telegram::SendAttachmentsService do
         service.perform
 
         expect(a_request(:post, "#{telegram_api_url}/sendMediaGroup")
-          .with { |req| req.body.include?(ERB::Util.url_encode('<b>MACOLY MELO:</b>')) })
+          .with { |req| req.body.include?('MACOLY%20MELO') })
           .to have_been_made.once
       end
     end
