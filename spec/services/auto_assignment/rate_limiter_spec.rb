@@ -116,6 +116,25 @@ RSpec.describe AutoAssignment::RateLimiter do
     end
   end
 
+  describe '#release_assignment' do
+    let(:assignment_policy) do
+      instance_double(AssignmentPolicy, fair_distribution_limit: 5, fair_distribution_window: 3600)
+    end
+
+    before do
+      allow(inbox).to receive(:assignment_policy).and_return(assignment_policy)
+    end
+
+    it 'frees the slot held by the conversation' do
+      rate_limiter.track_assignment(conversation)
+      expect(rate_limiter.current_count).to eq(1)
+
+      rate_limiter.release_assignment(conversation)
+
+      expect(rate_limiter.current_count).to eq(0)
+    end
+  end
+
   describe 'configuration' do
     context 'with custom window' do
       let(:assignment_policy) do
