@@ -160,10 +160,5 @@ module Redis::Alfred
     def zremrangebyscore(key, range_start, range_end)
       $alfred.with { |conn| conn.zremrangebyscore(key, range_start, range_end) }
     end
-
-    # remove specific members from a sorted set
-    def zrem(key, *members)
-      $alfred.with { |conn| conn.zrem(key, members) }
-    end
   end
 end

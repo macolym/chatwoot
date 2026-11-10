@@ -61,6 +61,9 @@ class Messages::Instagram::BaseMessageBuilder < Messages::Messenger::MessageBuil
   end
 
   def set_conversation_based_on_inbox_config
+    # ponytail: the builder owns its own contact_inbox (the service's ivar is not visible here);
+    # without this the resolver gets nil and the message is dropped.
+    @contact_inbox ||= contact.contact_inboxes.find_by!(source_id: message_source_id)
     Conversations::ContactInboxResolver.new(
       contact_inbox: @contact_inbox,
       attributes: conversation_params.merge(contact_inbox_id: @contact_inbox.id)

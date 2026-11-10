@@ -1,3 +1,4 @@
+# rubocop:disable Metrics/ClassLength -- one line over after adding Telegram username search (fork-only)
 class Api::V1::Accounts::ContactsController < Api::V1::Accounts::BaseController
   include Sift
   sort_on :email, type: :string

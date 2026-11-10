@@ -14,7 +14,7 @@ class AutoAssignment::RateLimiter
   end
 
   def release_assignment(conversation)
-    Redis::Alfred.zrem(assignment_key, conversation.id)
+    Redis::Alfred.with { |conn| conn.zrem(assignment_key, [conversation.id]) }
   end
 
   def current_count
