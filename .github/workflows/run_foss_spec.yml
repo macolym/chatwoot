@@ -1,6 +1,10 @@
 name: Run Chatwoot CE spec
 permissions:
   contents: read
+env:
+  # ponytail: scout_apm 5.3.3 C ext uses an old function-pointer signature; GCC 15
+  # (ubuntu-26.04) promotes -Wincompatible-pointer-types to an error.
+  BUNDLE_BUILD__SCOUT_APM: "--with-cflags=-Wno-incompatible-pointer-types"
 on:
   push:
     branches:
