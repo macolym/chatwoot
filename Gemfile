@@ -1,6 +1,8 @@
 source 'https://rubygems.org'
 
-ruby '3.4.4'
+# ponytail: range, not exact patch — GitHub's ubuntu-24.04 label now provisions the
+# 26.04 image, which only ships the latest 3.4.x (3.4.12). Docker still builds with 3.4.4.
+ruby '>= 3.4.4', '< 3.5'
 
 ##-- base gems for rails --##
 
