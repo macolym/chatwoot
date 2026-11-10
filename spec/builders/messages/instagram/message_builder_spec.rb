@@ -228,7 +228,8 @@ describe Messages::Instagram::MessageBuilder do
       messaging = dm_params[:entry][0]['messaging'][0]
       contact = create_instagram_contact_for_sender(messaging['sender']['id'], instagram_inbox)
       existing_conversation = create(:conversation, account_id: account.id, inbox_id: instagram_inbox.id,
-                                                    contact_id: contact.id, status: :open)
+                                                    contact_id: contact.id, status: :open,
+                                                    contact_inbox: contact.contact_inboxes.find_by!(source_id: messaging['sender']['id']))
 
       described_class.new(messaging, instagram_inbox).perform
 
@@ -239,7 +240,8 @@ describe Messages::Instagram::MessageBuilder do
       messaging = dm_params[:entry][0]['messaging'][0]
       contact = create_instagram_contact_for_sender(messaging['sender']['id'], instagram_inbox)
       existing_conversation = create(:conversation, account_id: account.id, inbox_id: instagram_inbox.id,
-                                                    contact_id: contact.id, status: :resolved)
+                                                    contact_id: contact.id, status: :resolved,
+                                                    contact_inbox: contact.contact_inboxes.find_by!(source_id: messaging['sender']['id']))
 
       initial_count = Conversation.count
 
@@ -270,7 +272,8 @@ describe Messages::Instagram::MessageBuilder do
       messaging = dm_params[:entry][0]['messaging'][0]
       contact = create_instagram_contact_for_sender(messaging['sender']['id'], instagram_inbox)
       existing_conversation = create(:conversation, account_id: account.id, inbox_id: instagram_inbox.id,
-                                                    contact_id: contact.id, status: :resolved)
+                                                    contact_id: contact.id, status: :resolved,
+                                                    contact_inbox: contact.contact_inboxes.find_by!(source_id: messaging['sender']['id']))
 
       initial_count = Conversation.count
       messaging = dm_params[:entry][0]['messaging'][0]

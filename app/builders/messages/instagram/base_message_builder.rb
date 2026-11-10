@@ -66,7 +66,10 @@ class Messages::Instagram::BaseMessageBuilder < Messages::Messenger::MessageBuil
     @contact_inbox ||= contact.contact_inboxes.find_by!(source_id: message_source_id)
     Conversations::ContactInboxResolver.new(
       contact_inbox: @contact_inbox,
-      attributes: conversation_params.merge(contact_inbox_id: @contact_inbox.id)
+      attributes: conversation_params.merge(
+        contact_inbox_id: @contact_inbox.id,
+        additional_attributes: additional_conversation_attributes
+      )
     ).perform
   end
 

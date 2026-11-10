@@ -131,7 +131,7 @@ RSpec.describe Channel::Telegram do
 
     it 'sends raw HTML as escaped text' do
       conversation = create(:conversation, inbox: telegram_channel.inbox, additional_attributes: { 'chat_id' => '123' })
-      message = create(:message, message_type: :outgoing, content: "<a>\n<b></b></a>asdf", conversation: conversation)
+      message = create(:message, :bot_message, content: "<a>\n<b></b></a>asdf", conversation: conversation)
 
       stub_request(:post, "https://api.telegram.org/bot#{telegram_channel.bot_token}/sendMessage")
         .with(
@@ -150,7 +150,9 @@ RSpec.describe Channel::Telegram do
 
     it 'send message with reply_markup' do
       message = create(
-        :message, :bot_message, content: 'test', content_type: 'input_select',
+        :message, :bot_message,
+        content: 'test',
+        content_type: 'input_select',
         content_attributes: { 'items' => [{ 'title' => 'test', 'value' => 'test' }] },
         conversation: conversation
       )
