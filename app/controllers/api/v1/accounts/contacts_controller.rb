@@ -225,4 +225,6 @@ class Api::V1::Accounts::ContactsController < Api::V1::Accounts::BaseController
   end
 end
 
+# rubocop:enable Metrics/ClassLength
+
 Api::V1::Accounts::ContactsController.prepend_mod_with('Api::V1::Accounts::ContactsController')

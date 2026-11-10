@@ -56,9 +56,10 @@ RSpec.describe Channel::Telegram do
   end
 
   context 'when a valid message and empty attachments' do
+    let(:conversation) { create(:conversation, inbox: telegram_channel.inbox, additional_attributes: { 'chat_id' => '123' }) }
+
     it 'send message' do
-      message = create(:message, :bot_message, content: 'test',
-                                               conversation: create(:conversation, inbox: telegram_channel.inbox, additional_attributes: { 'chat_id' => '123' }))
+      message = create(:message, :bot_message, content: 'test', conversation: conversation)
 
       stub_request(:post, "https://api.telegram.org/bot#{telegram_channel.bot_token}/sendMessage")
         .with(
@@ -111,8 +112,7 @@ RSpec.describe Channel::Telegram do
     end
 
     it 'send message with markdown converted to telegram HTML' do
-      message = create(:message, :bot_message, content: '**test** *test* ~test~',
-                                               conversation: create(:conversation, inbox: telegram_channel.inbox, additional_attributes: { 'chat_id' => '123' }))
+      message = create(:message, :bot_message, content: '**test** *test* ~test~', conversation: conversation)
 
       stub_request(:post, "https://api.telegram.org/bot#{telegram_channel.bot_token}/sendMessage")
         .with(
@@ -151,8 +151,8 @@ RSpec.describe Channel::Telegram do
     it 'send message with reply_markup' do
       message = create(
         :message, :bot_message, content: 'test', content_type: 'input_select',
-                  content_attributes: { 'items' => [{ 'title' => 'test', 'value' => 'test' }] },
-                  conversation: create(:conversation, inbox: telegram_channel.inbox, additional_attributes: { 'chat_id' => '123' })
+        content_attributes: { 'items' => [{ 'title' => 'test', 'value' => 'test' }] },
+        conversation: conversation
       )
 
       stub_request(:post, "https://api.telegram.org/bot#{telegram_channel.bot_token}/sendMessage")
@@ -172,8 +172,8 @@ RSpec.describe Channel::Telegram do
 
     it 'sends message with business_connection_id' do
       additional_attributes = { 'chat_id' => '123', 'business_connection_id' => 'eooW3KF5WB5HxTD7T826' }
-      message = create(:message, :bot_message, content: 'test',
-                                               conversation: create(:conversation, inbox: telegram_channel.inbox, additional_attributes: additional_attributes))
+      conversation_with_business = create(:conversation, inbox: telegram_channel.inbox, additional_attributes: additional_attributes)
+      message = create(:message, :bot_message, content: 'test', conversation: conversation_with_business)
 
       stub_request(:post, "https://api.telegram.org/bot#{telegram_channel.bot_token}/sendMessage")
         .with(
@@ -189,8 +189,7 @@ RSpec.describe Channel::Telegram do
     end
 
     it 'send text message failed' do
-      message = create(:message, :bot_message, content: 'test',
-                                               conversation: create(:conversation, inbox: telegram_channel.inbox, additional_attributes: { 'chat_id' => '123' }))
+      message = create(:message, :bot_message, content: 'test', conversation: conversation)
 
       stub_request(:post, "https://api.telegram.org/bot#{telegram_channel.bot_token}/sendMessage")
         .with(

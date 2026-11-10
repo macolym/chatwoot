@@ -31,8 +31,7 @@ FactoryBot.define do
       message_type { 'outgoing' }
       # ponytail: the factory's after(:build) assigns a default sender, so clear it after create.
       after(:create) do |message|
-        message.update_column(:sender_id, nil)
-        message.reload
+        message.update!(sender: nil)
       end
     end
 
